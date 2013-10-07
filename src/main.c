@@ -87,9 +87,9 @@ void pt_boys(MPI_Comm room, MPI_Group boys, int rank) {
 		//party guy informs others of time taken and record our own
 		//but only half as much as the girls
 		if (c % 2 == 0) {
-			if (rank == 0) buf = partyOverhead;
+			if (rank == 0) buf = overhead;
 			MPI_Bcast(&buf, 1, MPI_INT, 0, room);
-			if (rank != 0) partyOverhead += buf;
+			partyOverhead += buf;
 		}
 		
 		MPI_Barrier(room);
@@ -98,7 +98,7 @@ void pt_boys(MPI_Comm room, MPI_Group boys, int rank) {
 	MPI_Barrier(room);
 
 	//all boys should agree on the total party overhead.
-	printf("b%d - total overhead: %d\n", rank, partyOverhead);
+	printf("b%d - says total overhead is: %d\n", rank, partyOverhead);
 }
 
 void pt_girls(MPI_Comm room, MPI_Group girls, int rank) {
@@ -109,9 +109,12 @@ void pt_girls(MPI_Comm room, MPI_Group girls, int rank) {
 		sleep(1);
 		
 	    //chief girl informs others of time taken and record our own
+		//she is more organized and thus actually records her own time
+		//instead of broadcoasting it loudly before recording it like
+		//the boys.
 		if (rank == 0) {
 			partyOverhead++;
-			buf = partyOverhead;
+			buf = 1;
 		}
 		
 		MPI_Bcast(&buf, 1, MPI_INT, 0, room);
@@ -120,7 +123,7 @@ void pt_girls(MPI_Comm room, MPI_Group girls, int rank) {
 	}
 	
 	MPI_Barrier(room);
-	printf("g%d - total overhead: %d\n", rank, partyOverhead);
+	printf("g%d - says total overhead is: %d\n", rank, partyOverhead);
 }
 
 int random(int min, int max) {
