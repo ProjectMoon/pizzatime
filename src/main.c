@@ -19,9 +19,12 @@
 //implementing exchange number requirement:
 //when someone takes a piece, they tell others not to take it. (aka locking)
 //salami: this is communication within the communicator
+#include "pizzatime.h"
 #include "mpi.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 int main(int argc, char **argv) {
 	int rank;
@@ -56,11 +59,84 @@ int main(int argc, char **argv) {
 	MPI_Comm_rank(room, &myrank);
 
 	if (boyGroup == true) {
-		printf("boys [%d] hi there\n", myrank);
+		pt_boys(room, people, myrank);
 	}
 	else {
-		printf("girls [%d] hi there\n", myrank);
+		pt_girls(room, people, myrank);
 	}
 
 	MPI_Finalize();
+}
+
+void pt_boys(MPI_Comm room, MPI_Group boys, int rank) {
+	int partyOverhead = 0;
+	int buf = 0;
+	for (int c = 0; c < 10; c++) {
+		int overhead = 0;
+		if (rank == 0 && c % 2 == 0) {
+			//party guy does random large task
+			overhead = random(3, 5);
+		}
+		else {
+			//party guy or everyone else eats a pizza.
+			overhead = 1;
+		}
+
+		sleep(overhead);
+		
+		//party guy informs others of time taken and record our own
+		//but only half as much as the girls
+		if (c % 2 == 0) {
+			if (rank == 0) buf = partyOverhead;
+			MPI_Bcast(&buf, 1, MPI_INT, 0, room);
+			if (rank != 0) partyOverhead += buf;
+		}
+		
+		MPI_Barrier(room);
+	}
+	
+	MPI_Barrier(room);
+
+	//all boys should agree on the total party overhead.
+	printf("b%d - total overhead: %d\n", rank, partyOverhead);
+}
+
+void pt_girls(MPI_Comm room, MPI_Group girls, int rank) {
+	int partyOverhead = 0;
+	int buf = 0;
+	for (int c = 0; c < 10; c++) {
+		//everyone eats a pizza.
+		sleep(1);
+		
+	    //chief girl informs others of time taken and record our own
+		if (rank == 0) {
+			partyOverhead++;
+			buf = partyOverhead;
+		}
+		
+		MPI_Bcast(&buf, 1, MPI_INT, 0, room);
+		if (rank != 0) partyOverhead += buf;
+		MPI_Barrier(room);
+	}
+	
+	MPI_Barrier(room);
+	printf("g%d - total overhead: %d\n", rank, partyOverhead);
+}
+
+int random(int min, int max) {
+	//http://stackoverflow.com/questions/2509679/how-to-generate-a-random-number-from-within-a-range-c
+	int base_random = rand(); /* in [0, RAND_MAX] */
+	if (RAND_MAX == base_random) return random(min, max);
+  /* now guaranteed to be in [0, RAND_MAX) */
+	int range       = max - min,
+		remainder   = RAND_MAX % range,
+		bucket      = RAND_MAX / range;
+	/* There are range buckets, plus one smaller interval
+	   within remainder of RAND_MAX */
+	if (base_random < RAND_MAX - remainder) {
+		return min + base_random/bucket;
+	}
+	else {
+		return random(min, max);
+	}
 }
