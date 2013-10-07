@@ -1,24 +1,24 @@
-//http://static.msi.umn.edu/tutorial/scicomp/general/MPI/communicator.html
-
-//two pizzas in two rooms = two mpi communicators
-
-//guy room:
-//1 party guy, who randomly gets call, opens door, provides drinks, or eats.
-//   model with sleep calls
-//X others, who only eat.
-//once all have eaten all the pizza, they are done.
-
-//girl room:
-//X girls, who only eat.
-//once all have eaten the pizza, they are done.
-
-//eating the pizza:
-//the pizza has x number of pieces
-//each piece takes 7 bites to eat fully
-
-//implementing exchange number requirement:
-//when someone takes a piece, they tell others not to take it. (aka locking)
-//salami: this is communication within the communicator
+/*
+ * Split 4 guys and 4 girls into 2 groups. 8 nodes required to run.
+ * Each group will rely on their leader to tell them how long it is
+ * taking them to eat pizza, and then they eventually check back to
+ * see how in agreement they are.
+ *
+ * Boys - One party guy who does random longer tasks every other iteration.
+ * But he also only tells the other guys the party overhead every other
+ * iteration. They will in total take around 18-19 sec due to party guy's
+ * extra overhead.
+ *
+ * Girls - Twice as chatty than the guys' room. Also apparently very adept
+ * at speed-eating pizza. They will always take 10 seconds because they are
+ * only eating pizza. The chief of the girls tells the others the current
+ * overhead each iteration.
+ *
+ * At the end, all group members report their overhead findings and then
+ * use MPI_Gather to send these findings back to the group's master proc.
+ * The master process then asserts that they all agree (Which they always
+ * do--perhaps drunkenness feature will be added in v2.0).
+ */
 #include "pizzatime.h"
 #include "mpi.h"
 #include <stdio.h>
