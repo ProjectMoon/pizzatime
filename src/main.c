@@ -71,6 +71,8 @@ int main(int argc, char **argv) {
 void pt_boys(MPI_Comm room, MPI_Group boys, int rank) {
 	int partyOverhead = 0;
 	int buf = 0;
+
+	srand(time(NULL));
 	for (int c = 0; c < 10; c++) {
 		int overhead = 0;
 		if (rank == 0 && c % 2 == 0) {
@@ -99,6 +101,12 @@ void pt_boys(MPI_Comm room, MPI_Group boys, int rank) {
 
 	//all boys should agree on the total party overhead.
 	printf("b%d - says total overhead is: %d\n", rank, partyOverhead);
+
+	int results[4];
+	MPI_Gather(&partyOverhead, 1, MPI_INT, results, 1, MPI_INT, 0, room);
+	if (rank == 0) {
+		pt_assert_agreement(results, 4);
+	}
 }
 
 void pt_girls(MPI_Comm room, MPI_Group girls, int rank) {
@@ -123,7 +131,35 @@ void pt_girls(MPI_Comm room, MPI_Group girls, int rank) {
 	}
 	
 	MPI_Barrier(room);
+	
 	printf("g%d - says total overhead is: %d\n", rank, partyOverhead);
+	
+	int results[4];
+	MPI_Gather(&partyOverhead, 1, MPI_INT, results, 1, MPI_INT, 0, room);
+	if (rank == 0) {
+		pt_assert_agreement(results, 4);
+	}
+}
+
+void pt_assert_agreement(int overheads[], int members) {
+	bool agreement = true;
+	for (int c = 0; c < members; c++) {
+		for (int x = 0; x < members; x++) {
+			if (overheads[c] != overheads[x]) {
+				agreement = false;
+				break;
+			}
+		}
+
+		if (agreement == false) break;
+	}
+
+	if (agreement == true) {
+		printf("members of group do agree on overheads!\n!");
+	}
+	else {
+		printf("members of group do not agree on overheads!\n");
+	}
 }
 
 int random(int min, int max) {
