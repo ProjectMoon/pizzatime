@@ -8,7 +8,7 @@
 
 # remote settings
 REMOTE_USER=$(shell cat user.in | sed -n 1p)
-REMOTE_MACHINE=sierra.futuregrid.org
+REMOTE_MACHINE=jotunn.rhi.hi.is
 REMOTE_PATH=$(shell cat user.in | sed -n 2p)
 
 REMOTE_LOGIN=$(REMOTE_USER)@$(REMOTE_MACHINE)

@@ -1,9 +1,10 @@
+//http://static.msi.umn.edu/tutorial/scicomp/general/MPI/communicator.html
+
 //two pizzas in two rooms = two mpi communicators
-//question: "Guys/ladies exchange number of salami/piece" does this mean only
-//          in that specific communicator? or do we need intercommunicators
 
 //guy room:
 //1 party guy, who randomly gets call, opens door, provides drinks, or eats.
+//   model with sleep calls
 //X others, who only eat.
 //once all have eaten all the pizza, they are done.
 
@@ -17,4 +18,49 @@
 
 //implementing exchange number requirement:
 //when someone takes a piece, they tell others not to take it. (aka locking)
-//salami? need clarification
+//salami: this is communication within the communicator
+#include "mpi.h"
+#include <stdio.h>
+#include <stdbool.h>
+
+int main(int argc, char **argv) {
+	int rank;
+
+	//later replace this with argv and possibly
+	//non-equal amounts of boys and girls
+	int numPeople = 8;
+	int boys[4] = { 0, 1, 2, 3 };
+	int girls[4] = { 4, 5, 6, 7 };
+	
+	MPI_Init(&argc, &argv);
+	//MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	MPI_Group world, people;
+	MPI_Comm_group(MPI_COMM_WORLD, &world);
+
+	bool boyGroup = false;
+	if (rank < numPeople / 2) {
+		MPI_Group_incl(world, 4, boys, &people);
+		boyGroup = true;
+	}
+	else {
+		MPI_Group_incl(world, 4, girls, &people);
+		boyGroup = false;
+	}
+
+	MPI_Comm room;
+	MPI_Comm_create(MPI_COMM_WORLD, people, &room);
+
+	int myrank;
+	MPI_Comm_rank(room, &myrank);
+
+	if (boyGroup == true) {
+		printf("boys [%d] hi there\n", myrank);
+	}
+	else {
+		printf("girls [%d] hi there\n", myrank);
+	}
+
+	MPI_Finalize();
+}
